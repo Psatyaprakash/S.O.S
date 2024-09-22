@@ -66,36 +66,24 @@ class MainActivity : ComponentActivity() {
                             // background color.
                             TopAppBar(colors = TopAppBarColors(containerColor = greenColor, scrolledContainerColor = Color.Black, titleContentColor = Color.Cyan, actionIconContentColor = Color.White, navigationIconContentColor = Color.Transparent),
 
-                                // along with that we are specifying
-                                // title for our top bar.
                                 title = {
 
-                                    // in the top bar we are specifying
-                                    // tile as a text
                                     Text(
-                                        // on below line we are specifying
-                                        // text to display in top app bar.
                                         text = "MayDay SOS",
-
-                                        // on below line we are specifying
-                                        // modifier to fill max width.
                                         modifier = Modifier.fillMaxWidth(),
-
-                                        // on below line we are specifying
-                                        // text alignment.
                                         textAlign = TextAlign.Center,
-
-                                        // on below line we are specifying
-                                        // color for our text.
                                         color = Color.White
                                     )
                                 })
                         }) {
-                        // on below line we are calling connection
-                        // information method to display UI
-                        smsUI(context = LocalContext.current)
+
+                        Column(verticalArrangement = Arrangement.Bottom) {
+                            smsUI(context = LocalContext.current)
+                            ShareLocationScreen(context = LocalContext.current)
+                        }
                     }
                 }
+                
             }
         }
     }
@@ -116,9 +104,11 @@ fun smsUI(context: Context) {
     Column(
         // on below line we are adding a modifier to it,
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+
             // on below line we are adding a padding.
-            .padding(all = 30.dp),
+            .padding(all = 30.dp)
+            .padding(top = 200.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

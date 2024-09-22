@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.maydaysos.app-mergeDebugResources-42:/values-v21/values-v21.xml",
+            "outputFile": "com.example.maydaysos.app-mergeDebugResources-47:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\586e550422b6e33dbfd0b575c8ba5703\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
+                    "source": "C:\\Users\\psaty\\.gradle\\caches\\transforms-4\\8f7a0a6867b6845ec172c86436478c1a\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",

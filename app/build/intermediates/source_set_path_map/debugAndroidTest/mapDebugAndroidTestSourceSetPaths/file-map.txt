@@ -29,7 +29,7 @@ com.example.maydaysos.test.app-ui-test-release-27 C:\Users\JAGANNATH\.gradle\cac
 com.example.maydaysos.test.app-lifecycle-runtime-release-28 C:\Users\JAGANNATH\.gradle\caches\transforms-4\ec1607bd06c9303c39d8b0c3b40a9341\transformed\lifecycle-runtime-release\res
 com.example.maydaysos.test.app-profileinstaller-1.3.1-29 C:\Users\JAGANNATH\.gradle\caches\transforms-4\f777c8cd3c4986f4091ad8486f1dea5e\transformed\profileinstaller-1.3.1\res
 com.example.maydaysos.test.app-lifecycle-process-2.8.4-30 C:\Users\JAGANNATH\.gradle\caches\transforms-4\ff20babe824c10a5f0c8705b070b1148\transformed\lifecycle-process-2.8.4\res
-com.example.maydaysos.test.app-androidTest-31 D:\MayDaySOS\app\build\generated\res\resValues\androidTest\debug
-com.example.maydaysos.test.app-mergeDebugAndroidTestResources-32 D:\MayDaySOS\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
-com.example.maydaysos.test.app-mergeDebugAndroidTestResources-33 D:\MayDaySOS\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
-com.example.maydaysos.test.app-debugAndroidTest-34 D:\MayDaySOS\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
+com.example.maydaysos.test.app-androidTest-31 D:\S.O.S\app\build\generated\res\resValues\androidTest\debug
+com.example.maydaysos.test.app-mergeDebugAndroidTestResources-32 D:\S.O.S\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.example.maydaysos.test.app-mergeDebugAndroidTestResources-33 D:\S.O.S\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.example.maydaysos.test.app-debugAndroidTest-34 D:\S.O.S\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

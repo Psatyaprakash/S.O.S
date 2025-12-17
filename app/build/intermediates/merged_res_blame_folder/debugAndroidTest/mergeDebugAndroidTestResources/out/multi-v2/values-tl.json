@@ -4,7 +4,7 @@
             "outputFile": "com.example.maydaysos.test.app-mergeDebugAndroidTestResources-32:/values-tl/values-tl.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\586e550422b6e33dbfd0b575c8ba5703\\transformed\\core-1.13.1\\res\\values-tl\\values-tl.xml",
+                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\f81545c59643ef705f86046e22f8084e\\transformed\\core-1.13.1\\res\\values-tl\\values-tl.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\03b990499334c95490bd64391a5da0b5\\transformed\\ui-release\\res\\values-tl\\values-tl.xml",
+                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\73b9f10d7132a30d47c129c1f0aba3e3\\transformed\\ui-release\\res\\values-tl\\values-tl.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

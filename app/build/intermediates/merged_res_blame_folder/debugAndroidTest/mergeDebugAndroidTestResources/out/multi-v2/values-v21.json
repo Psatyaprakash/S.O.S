@@ -4,7 +4,7 @@
             "outputFile": "com.example.maydaysos.test.app-mergeDebugAndroidTestResources-32:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\586e550422b6e33dbfd0b575c8ba5703\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
+                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\f81545c59643ef705f86046e22f8084e\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",
@@ -23,7 +23,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\ae37de4f0a1e52d1304975081c6e44d3\\transformed\\core-1.6.1\\res\\values-v21\\values.xml",
+                    "source": "C:\\Users\\JAGANNATH\\.gradle\\caches\\transforms-4\\c832a2078bb6f0762aefe73284efbddd\\transformed\\core-1.6.1\\res\\values-v21\\values.xml",
                     "from": {
                         "startLines": "4,13",
                         "startColumns": "0,0",

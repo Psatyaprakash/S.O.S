@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.telephony.SmsManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -15,12 +17,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,16 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.maydaysos.ui.theme.MayDaySOSTheme
-
-/*
- * ================================= IMPORTANT =================================
- * You MUST add the following line to your AndroidManifest.xml file
- * for the SMS functionality to work. Add it just before the <application> tag.
- *
- * <uses-permission android:name="android.permission.SEND_SMS" />
- *
- * ===========================================================================
- */
+import com.google.android.gms.location.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : ComponentActivity() {
 
@@ -52,10 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MayDaySOSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     Scaffold(
                         topBar = {
                             TopAppBar(
@@ -68,21 +60,13 @@ class MainActivity : ComponentActivity() {
                                         text = "MayDay SOS",
                                         modifier = Modifier.fillMaxWidth(),
                                         textAlign = TextAlign.Center,
-                                        color = Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
                             )
                         }
-                    ) { paddingValues ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(paddingValues)
-                        ) {
-                            // We pass the context from the activity
-                            SOSContent()
-                        }
+                    ) { padding ->
+                        SOSContent(Modifier.padding(padding))
                     }
                 }
             }
@@ -90,134 +74,219 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SOSContent() {
-    // Current context is needed for permissions and sending SMS
+fun SOSContent(modifier: Modifier = Modifier) {
+
     val context = LocalContext.current
-
-    // State for emergency contacts and message
-    val phoneNumber1 = remember { mutableStateOf("9777548904") }
-    val phoneNumber2 = remember { mutableStateOf("8594937782") }
-    val message = remember { mutableStateOf("🆘 EMERGENCY! I need immediate help. This is an automated SOS message. Please contact me or call emergency services.") }
-
-    // --- New Permission Handling Logic ---
-    // This launcher will request the SEND_SMS permission.
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // If permission is granted, inform the user.
-            Toast.makeText(context, "Permission granted. You can now send SOS messages.", Toast.LENGTH_SHORT).show()
-        } else {
-            // If permission is denied, inform the user.
-            Toast.makeText(context, "Permission denied. Cannot send SOS messages.", Toast.LENGTH_SHORT).show()
-        }
+    val scrollState = rememberScrollState()
+    val fusedClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
     }
 
-    // This function checks for permission and then sends the SMS.
-    fun checkAndSendSms(phoneNumbers: List<String>) {
-        when {
-            // Check if the permission is already granted
-            ContextCompat.checkSelfPermission(
+    val phoneNumbers = remember { mutableStateListOf("9876543210") }
+    val baseMessage = remember { mutableStateOf("🆘 EMERGENCY! I need immediate help.") }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+
+    fun hasSmsPermission() =
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.SEND_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+
+    fun hasLocationPermission() =
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+    /** ✅ CONTACT VALIDATION */
+    fun areContactsValid(): Boolean {
+        if (phoneNumbers.isEmpty()) return false
+        return phoneNumbers.none { it.trim().isEmpty() }
+    }
+
+    fun sendSmsWithLocation(lat: Double, lng: Double) {
+        val finalMessage = """
+            ${baseMessage.value}
+
+            📍 Location:
+            Latitude: $lat
+            Longitude: $lng
+
+            📌 Google Maps:
+            https://maps.google.com/?q=$lat,$lng
+        """.trimIndent()
+
+        sendSmsDirectly(context, phoneNumbers, finalMessage)
+    }
+
+    fun sendSmsWithoutLocation() {
+        sendSmsDirectly(
+            context,
+            phoneNumbers,
+            "${baseMessage.value}\n\n📍 Location unavailable"
+        )
+    }
+
+    fun fetchLocationAndSendSOS() {
+
+        // 🔴 NEW VALIDATION CHECK
+        if (!areContactsValid()) {
+            Toast.makeText(
                 context,
-                Manifest.permission.SEND_SMS
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // If granted, send the SMS
-                sendSmsDirectly(context, phoneNumbers, message.value)
+                "Please fill all contact numbers",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        if (!hasSmsPermission()) {
+            smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+            Toast.makeText(context, "Allow SMS permission", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (!hasLocationPermission()) {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            Toast.makeText(context, "Allow Location permission", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val sent = AtomicBoolean(false)
+        val handler = Handler(Looper.getMainLooper())
+
+        // ⏱️ Hard timeout → guarantees SMS delivery
+        handler.postDelayed({
+            if (sent.compareAndSet(false, true)) {
+                sendSmsWithoutLocation()
             }
-            // If permission is not granted, request it.
-            else -> {
-                requestPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+        }, 5000)
+
+        fusedClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            null
+        ).addOnSuccessListener { location ->
+
+            if (sent.get()) return@addOnSuccessListener
+
+            if (location != null) {
+                sent.set(true)
+                handler.removeCallbacksAndMessages(null)
+                sendSmsWithLocation(location.latitude, location.longitude)
+            } else {
+                fusedClient.lastLocation.addOnSuccessListener { lastLocation ->
+                    if (sent.compareAndSet(false, true)) {
+                        handler.removeCallbacksAndMessages(null)
+                        if (lastLocation != null) {
+                            sendSmsWithLocation(
+                                lastLocation.latitude,
+                                lastLocation.longitude
+                            )
+                        } else {
+                            sendSmsWithoutLocation()
+                        }
+                    }
+                }
+            }
+        }.addOnFailureListener {
+            if (sent.compareAndSet(false, true)) {
+                handler.removeCallbacksAndMessages(null)
+                sendSmsWithoutLocation()
             }
         }
     }
-
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(all = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .verticalScroll(scrollState)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Emergency Header Card
+
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "🚨 EMERGENCY SOS 🚨",
-                    color = Color(0xFFD32F2F),
+                    "🚨 EMERGENCY SOS 🚨",
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Tap the SOS button to send emergency messages",
-                    color = Color(0xFF666666),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
+                Text("Tap SOS to send message with location")
             }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Contact Information Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Emergency Contacts",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333)
-                )
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Text("Emergency Contacts", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = phoneNumber1.value,
-                    onValueChange = { phoneNumber1.value = it },
-                    label = { Text("Contact 1") },
+
+                phoneNumbers.forEachIndexed { index, number ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = number,
+                            onValueChange = { phoneNumbers[index] = it },
+                            label = { Text("Contact ${index + 1}") },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (phoneNumbers.size > 1) {
+                            IconButton(onClick = { phoneNumbers.removeAt(index) }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Color.Red
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Button(
+                    onClick = { phoneNumbers.add("") },
                     modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = phoneNumber2.value,
-                    onValueChange = { phoneNumber2.value = it },
-                    label = { Text("Contact 2") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    Text("➕ Add Contact")
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
-                    value = message.value,
-                    onValueChange = { message.value = it },
+                    value = baseMessage.value,
+                    onValueChange = { baseMessage.value = it },
                     label = { Text("Emergency Message") },
                     modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    maxLines = 4
+                    minLines = 3
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // SOS Button (Large and Prominent)
         Button(
-            onClick = {
-                // Now calls the function that checks permissions first
-                checkAndSendSms(listOf(phoneNumber1.value))
-            },
+            onClick = { fetchLocationAndSendSOS() },
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFD32F2F),
@@ -225,123 +294,66 @@ fun SOSContent() {
             ),
             modifier = Modifier.size(180.dp)
         ) {
-            Text(
-                "SOS",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("SOS", fontSize = 32.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Action Buttons Row
-        Row(
+        Button(
+            onClick = {
+                val intent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:${phoneNumbers.first()}")
+                }
+                context.startActivity(intent)
+            },
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
         ) {
-            // Call Emergency Button (This logic remains the same)
-            Button(
-                onClick = {
-                    callEmergency(context, phoneNumber1.value)
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("📞 Call", fontSize = 16.sp)
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Send to Both Contacts Button
-            Button(
-                onClick = {
-                    // Now calls the function that checks permissions first for both numbers
-                    checkAndSendSms(listOf(phoneNumber1.value, phoneNumber2.value))
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF9800),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("📨 Send All", fontSize = 16.sp)
-            }
+            Text("📞 Call Emergency", color = Color.White)
         }
     }
 }
 
 /**
- * Sends an SMS message directly using SmsManager.
- * @param context The application context.
- * @param phoneNumbers A list of phone numbers to send the message to.
- * @param message The message content.
+ * ✅ Multipart-safe SMS sending
  */
-fun sendSmsDirectly(context: Context, phoneNumbers: List<String>, message: String) {
-    if (message.isBlank()) {
-        Toast.makeText(context, "Emergency message cannot be empty.", Toast.LENGTH_SHORT).show()
-        return
-    }
-
+fun sendSmsDirectly(
+    context: Context,
+    phoneNumbers: List<String>,
+    message: String
+) {
     try {
-        // Get the default SmsManager instance
-        val smsManager: SmsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(SmsManager::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            SmsManager.getDefault()
-        }
+        val smsManager =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService(SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            }
 
-        var numbersSent = 0
-        // Loop through each phone number and send the message
-        phoneNumbers.forEach { phoneNumber ->
-            if (phoneNumber.isNotBlank()) {
-                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
-                numbersSent++
+        phoneNumbers.forEach { number ->
+            if (number.isNotBlank()) {
+                val parts = smsManager.divideMessage(message)
+                smsManager.sendMultipartTextMessage(
+                    number,
+                    null,
+                    parts,
+                    null,
+                    null
+                )
             }
         }
 
-        if (numbersSent > 0) {
-            Toast.makeText(context, "SOS message sent to $numbersSent contact(s)!", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(context, "No valid phone numbers provided.", Toast.LENGTH_SHORT).show()
-        }
+        Toast.makeText(context, "SOS message sent successfully", Toast.LENGTH_LONG).show()
 
     } catch (e: Exception) {
-        Toast.makeText(context, "Failed to send SMS. Error: ${e.message}", Toast.LENGTH_LONG).show()
-        e.printStackTrace()
+        Toast.makeText(context, "SMS failed: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }
-
-/**
- * Opens the dialer app with the specified phone number.
- * This is kept as is, as it's good practice to let the user confirm the call.
- * @param context The application context.
- * @param phoneNumber The number to call.
- */
-fun callEmergency(context: Context, phoneNumber: String) {
-    if (phoneNumber.isBlank()) {
-        Toast.makeText(context, "Phone number is empty.", Toast.LENGTH_SHORT).show()
-        return
-    }
-    try {
-        val callIntent = Intent(Intent.ACTION_DIAL).apply {
-            data = Uri.parse("tel:$phoneNumber")
-        }
-        context.startActivity(callIntent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "Error making call: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-}
-
 
 @Preview(showBackground = true)
 @Composable
-fun SOSContentPreview() {
+fun SOSPreview() {
     MayDaySOSTheme {
         SOSContent()
     }
